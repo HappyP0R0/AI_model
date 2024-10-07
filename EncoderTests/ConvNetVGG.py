@@ -108,24 +108,24 @@ for epoch in range(num_epochs):
 
     print(f'Epoch {epoch}/{num_epochs - 1} Loss: {epoch_loss:.4f} Acc: {epoch_acc:.4f}')
 
-vgg_model.eval()
-test_loss = 0.0
-test_corrects = 0
+    vgg_model.eval()
+    test_loss = 0.0
+    test_corrects = 0
 
-with torch.no_grad():
-    for inputs, labels in test_loader:
-        inputs, labels = inputs.to(device), labels.to(device)
+    with torch.no_grad():
+        for inputs, labels in test_loader:
+            inputs, labels = inputs.to(device), labels.to(device)
 
-        outputs = vgg_model(inputs)
-        loss = criterion(outputs, labels)
+            outputs = vgg_model(inputs)
+            loss = criterion(outputs, labels)
 
-        _, preds = torch.max(outputs, 1)
-        test_loss += loss.item() * inputs.size(0)
-        test_corrects += torch.sum(preds == labels.data)
+            _, preds = torch.max(outputs, 1)
+            test_loss += loss.item() * inputs.size(0)
+            test_corrects += torch.sum(preds == labels.data)
 
-test_loss = test_loss / len(test_dataset)
-test_acc = test_corrects.double() / len(test_dataset)
+    test_loss = test_loss / len(test_dataset)
+    test_acc = test_corrects.double() / len(test_dataset)
 
-print(f'Test Loss: {test_loss:.4f}, Test Accuracy: {test_acc:.4f}')
+    print(f'Epoch {epoch}/{num_epochs - 1} Test Loss: {test_loss:.4f}, Test Accuracy: {test_acc:.4f}')
 
 print(f"Using device: {device}")  # Will print 'cuda' for GPU, 'cpu' otherwise

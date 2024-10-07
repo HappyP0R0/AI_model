@@ -35,15 +35,23 @@ class CustomImageDataset(torch.utils.data.Dataset):
 
 
 # Initialize data transforms (resizing to 224x224, normalizing)
-data_transforms = transforms.Compose([
-    transforms.Resize((224, 224)),
-    transforms.ToTensor(),
-    transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-])
+data_transforms = {
+    'train': transforms.Compose([
+        transforms.Resize((224, 224)),
+        transforms.RandomHorizontalFlip(),
+        transforms.ToTensor(),
+        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+    ]),
+    'test': transforms.Compose([
+        transforms.Resize((224, 224)),
+        transforms.ToTensor(),
+        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+    ]),
+}
 
 # Load datasets using the custom dataset class
-train_dataset = CustomImageDataset(txt_file=path_to_folder + 'driver_train.txt', transform=data_transforms)
-test_dataset = CustomImageDataset(txt_file=path_to_folder + 'driver_test.txt', transform=data_transforms)
+train_dataset = CustomImageDataset(txt_file=path_to_folder + 'driver_train.txt', transform=data_transforms['train'])
+test_dataset = CustomImageDataset(txt_file=path_to_folder + 'driver_test.txt', transform=data_transforms['test'])
 
 train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True, num_workers=0)
 test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False, num_workers=0)
@@ -91,24 +99,24 @@ for epoch in range(num_epochs):
     epoch_loss = running_loss / len(train_dataset)
     epoch_acc = running_corrects.double() / len(train_dataset)
 
-    print(f'Epoch {epoch}/{num_epochs - 1} Loss: {epoch_loss:.4f} Acc: {epoch_acc:.4f}')
+    #print(f'Epoch {epoch}/{num_epochs - 1} Loss: {epoch_loss:.4f}')
 
-# TESTING PHASE
-densenet_model.eval()  # Set the model to evaluation mode
-test_loss = 0.0
-test_corrects = 0
+    # TESTING PHASE
+    densenet_model.eval()  # Set the model to evaluation mode
+    test_loss = 0.0
+    test_corrects = 0
 
-with torch.no_grad():  # Disable gradient computation for testing
-    for inputs, labels in test_loader:
-        inputs, labels = inputs.to(device), labels.to(device)
-        outputs = densenet_model(inputs)
-        loss = criterion(outputs, labels)
+    with torch.no_grad():  # Disable gradient computation for testing
+        for inputs, labels in test_loader:
+            inputs, labels = inputs.to(device), labels.to(device)
+            outputs = densenet_model(inputs)
+            loss = criterion(outputs, labels)
 
-        _, preds = torch.max(outputs, 1)
-        test_loss += loss.item() * inputs.size(0)
-        test_corrects += torch.sum(preds == labels.data)
+            _, preds = torch.max(outputs, 1)
+            test_loss += loss.item() * inputs.size(0)
+            test_corrects += torch.sum(preds == labels.data)
 
-test_loss = test_loss / len(test_dataset)
-test_acc = test_corrects.double() / len(test_dataset)
+    test_loss = test_loss / len(test_dataset)
+    test_acc = test_corrects.double() / len(test_dataset)
 
-print(f"Test Loss: {test_loss:.4f}, Test Accuracy: {test_acc:.4f}%")
+    print(f"Epoch {epoch}/{num_epochs - 1} Test Accuracy: {test_acc:.4f}")
