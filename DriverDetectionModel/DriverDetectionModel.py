@@ -55,7 +55,7 @@ class VideoClassifier(nn.Module):
 train_transform = transforms.Compose([
     transforms.Resize(244),
     transforms.RandomHorizontalFlip(0.5),
-    transforms.ColorJitter(brightness=(0.2, 1.2), contrast=(0.5, 1)),
+    transforms.ColorJitter(brightness=(0.3, 1), contrast=(0.3, 1)),
     transforms.ToTensor(),
     transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
 ])
