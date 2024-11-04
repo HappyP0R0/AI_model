@@ -200,6 +200,6 @@ for epoch in range(num_epochs):
             all_preds,
             class_labels
         )
-    }, epoch)
+    }, epoch+1)
 
 wandb.finish()
