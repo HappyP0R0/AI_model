@@ -11,23 +11,23 @@ import time
 import wandb
 
 # Constants
-BATCH_SIZE = 32
+BATCH_SIZE = 16
 
 parser = argparse.ArgumentParser(description='Model Training')
 parser.add_argument('-run_name', default=f'run_{time.time()}')
-parser.add_argument('-is_cuda', default=False, type=lambda x: (str(x).lower() == 'true'))
 parser.add_argument('-epochs', default=10, type=int)
-parser.add_argument("-training_file")
-parser.add_argument("-test_file")
-parser.add_argument("-img_path_train")
-parser.add_argument("-img_path_test")
+parser.add_argument('-use_pooling', default=False, type=lambda x: (str(x).lower() == 'true'))
+parser.add_argument("-training_file", default="E:/AI_Data/100Drivers/Day/Cam1/driver_train.txt")
+parser.add_argument("-test_file", default="E:/AI_Data/100Drivers/Day/Cam1/driver_test.txt")
+parser.add_argument("-img_path_train", default="E:/AI_Data/100Drivers/Day/Cam1/")
+parser.add_argument("-img_path_test", default="E:/AI_Data/100Drivers/Night/Cam1/")
 args = parser.parse_args()
 
-path_to_folder = 0  # "E:\AI_Data\\100Drivers\Day\Cam1\\"
-training_file_path = args.training_file  # path_to_folder + "driver_train.txt"
-test_file_path = args.test_file  # path_to_folder + "driver_test.txt"
-train_image_folder_path = args.img_path_train  # "E:\\AI_Data\\100Drivers\\Day\\Cam1\\"
-test_image_folder_path = args.img_path_test  # "E:\\AI_Data\\100Drivers\\Night\\Cam1\\"
+training_file_path = args.training_file
+test_file_path = args.test_file
+train_image_folder_path = args.img_path_train
+test_image_folder_path = args.img_path_test
+use_pooling = args.use_pooling
 
 
 # Define the model architecture
@@ -38,7 +38,10 @@ class VideoClassifier(nn.Module):
         self.efficientnet.classifier = nn.Identity()  # Remove the classification layer
         self.lstm = nn.LSTM(input_size=1280, hidden_size=512, num_layers=1,
                             batch_first=True)  # Adjust input size for EfficientNet
-        self.fc = nn.Linear(512, num_classes)  # Output layer
+        if use_pooling:
+            self.fc = nn.Linear(1536, num_classes)  # Output layer with pooling
+        else:
+            self.fc = nn.Linear(512, num_classes)  # Output layer no pooling
 
     def forward(self, x):
         batch_size, seq_len, c, h, w = x.size()
@@ -46,14 +49,24 @@ class VideoClassifier(nn.Module):
         x = self.efficientnet(x)  # Extract features
         x = x.view(batch_size, seq_len, -1)  # Reshape back to (batch_size, seq_len, features)
         x, _ = self.lstm(x)  # LSTM
-        x = x[:, -1, :]  # Get the output of the last time step
+
+        if use_pooling:
+            mean_pool = x.mean(dim=1)  # Mean
+            max_pool = x.max(dim=1).values  # Max
+            std_pool = x.std(dim=1)  # Standard deviation
+
+            # Add together
+            x = torch.cat([mean_pool, max_pool, std_pool], dim=1)  # (batch_size, hidden_size * 3)
+        else:
+            x = x[:, -1, :]  # Get the output of the last time step
+
         x = self.fc(x)  # Classify
         return x
 
 
 # Create Datasets and DataLoaders
 train_transform = transforms.Compose([
-    transforms.Resize(244),
+    transforms.Resize((244, 244)),
     transforms.RandomHorizontalFlip(0.5),
     transforms.ColorJitter(brightness=(0.3, 1), contrast=(0.3, 1)),
     transforms.ToTensor(),
@@ -67,7 +80,7 @@ train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True)
 
 # test dataset
 test_transform = transforms.Compose([
-    transforms.Resize(244),
+    transforms.Resize((244, 244)),
     transforms.ToTensor(),
     transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
 ])
@@ -89,14 +102,27 @@ num_epochs = args.epochs
 wandb.init(
     # set the wandb project where this run will be logged
     project="bachelors",
+    name=args.run_name + str(time.time()),
 
     # track hyperparameters and run metadata
     config={
         "architecture": "EfficientNet + LSTM",
         "dataset": "100-drivers",
         "epochs": args.epochs,
+        "learning_rate": 0.001,
+        "device": 'CUDA' if torch.cuda.is_available() else 'CPU',
+        "pooling": use_pooling
     }
 )
+
+class_labels = [
+    "Safe Driving", "Sleeping", "Yawning",
+    "Talking Left", "Talking Right", "Texting Left",
+    "Texting Right", "Make Up", "Look Left", "Look Right",
+    "Look Up", "Look Down", "Smoke Left",
+    "Smoke Right", "Smoke Mouth", "Eat Left", "Eat Right",
+    "Operate Radio", "Operate GPS", "Reach Behind",
+    "Leave Steering Wheel", "Talk To Passenger"]
 
 # Training loop
 for epoch in range(num_epochs):
@@ -121,12 +147,12 @@ for epoch in range(num_epochs):
         # Accumulate loss and acc for logging
         _, preds = torch.max(outputs, 1)
         running_loss += loss.item()
-        running_corrects += torch.sum(preds == labels.data)
+        running_corrects += torch.sum(preds == labels.data).item()
 
     epoch_acc = running_corrects / len(train_dataset)
     epoch_loss = running_loss / len(train_dataset)
-
-    wandb.log({"train_acc": epoch_acc, "train_loss": epoch_loss})
+    print(
+        f'epoch: {epoch} train acc: {epoch_acc}, train loss: {epoch_loss}, corrects: {running_corrects}, loss: {epoch_loss}')
 
     # Validation Loop
     model.eval()  # Set the model to evaluation mode
@@ -157,9 +183,23 @@ for epoch in range(num_epochs):
             correct += (predicted == labels).sum().item()
 
     # Calculate F1 score
-    test_loss = val_loss / len(test_loader)
+    test_loss = val_loss / total
     test_acc = correct / total
     f1 = f1_score(all_labels, all_preds, average='weighted')  # For multi-class classification
+    print(
+        f'epoch: {epoch} test acc: {test_loss}, test loss: {test_acc}, f1: {f1}')
 
-    wandb.log({"test_loss": test_loss, "test_acc": test_acc, "test_f1": f1})
+    wandb.log({
+        "train_acc": epoch_acc,
+        "train_loss": epoch_loss,
+        "test_loss": test_loss,
+        "test_acc": test_acc,
+        "test_f1": f1,
+        "conf_mat_"+str(epoch): wandb.sklearn.plot_confusion_matrix(
+            all_labels,
+            all_preds,
+            class_labels
+        )
+    }, epoch)
 
+wandb.finish()

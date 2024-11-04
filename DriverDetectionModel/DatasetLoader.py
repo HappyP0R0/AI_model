@@ -9,7 +9,7 @@ MAX_STEP = 5  # Max distance from img to img, stop searching if next 5 images do
 MAX_FRAMES = 5  # Max frames in one slide
 path_to_folder = "E:\\AI_Data\\100Drivers\\data-splits\\Cross-modality-setting\\D1_to_N1\\"
 image_folder_path = "E:\\AI_Data\\100Drivers\\Day\\Cam1\\"
-file = "D1_train_copy.txt"
+file = "D1_train.txt"
 
 
 class DataSetPrep:
@@ -46,7 +46,7 @@ class DataSetPrep:
                 curent_frame_num = '0' + curent_frame_num
 
             current_frame = prefix + curent_frame_num  # Adjust the format to fit file name format
-            frame_path = dir_name + "\\" + current_frame
+            frame_path = dir_name + "/" + current_frame
 
             if os.path.exists(image_path + frame_path):
                 is_first = 0
@@ -57,7 +57,6 @@ class DataSetPrep:
         return is_first
 
     def get_next_frame(self, last_frame):
-
         is0 = 0
 
         dir_name, file_name = os.path.split(last_frame)
@@ -73,15 +72,14 @@ class DataSetPrep:
         final_frame_path = 0
 
         counter = 1
-        while counter < MAX_STEP:
+        while counter <= MAX_STEP:
             curent_frame_num = f"{file_id + counter}.jpg"
 
             if (is0):
                 curent_frame_num = '0' + curent_frame_num
 
             current_frame = prefix + curent_frame_num  # Adjust the format to fit file name format
-            frame_path = dir_name + "\\" + current_frame
-
+            frame_path = dir_name + "/" + current_frame
             if os.path.exists(self.image_path + frame_path):
                 final_frame_path = frame_path
                 break
@@ -130,7 +128,6 @@ class DataSetPrep:
                 frames["Label"].append(label)
 
         frames = pd.DataFrame(frames)
-
         return frames
 
 
@@ -159,6 +156,4 @@ class VideoDataSet(Dataset):
         row = self.data.iloc[idx]
         frames = self.load_frames(row['ImagePath'])
         label = torch.tensor(row['Label'], dtype=torch.long)
-
         return frames, label
-
