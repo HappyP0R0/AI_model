@@ -21,15 +21,15 @@ Experiments where done using the model created by combining:
 - EfficientNetB0, LSTM and adding Pooling at the end (marked as D1ToD1Pooling or D1ToN1Pooling)
 
 ## Stats
-From stats we can see that model with Pooling gets higher stats.<br>
-The highest **Accuracy 81.91%** at Step 7, <br>
-where model got **F1 Score of 81.50** <br>
-and **Loss Function Value 0.0546** for D1ToD1Pooling run.
+From D1ToD1Pooling stats we can see that model with Pooling gets higher stats.
+- Accuracy **81.91%**  
+- F1 Score of **81.50**
+- Loss Function Value **0.0546** 
 
-Experiments with Night time photos show similar results, but with lower scores: <br>
-Accuracy: **51.06%** <br>
-F1-Score: **49.98** <br>
-Loss Function: **0.1552** <br>
+Experiments with Night time photos show similar results, but with lower scores: 
+- Accuracy: **51.06%** 
+- F1-Score: **49.98** 
+- Loss Function: **0.1552** 
 
 The experiment with night images took longer, so it got through only 5 steps (epoches) in 3 days.
 
