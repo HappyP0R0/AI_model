@@ -25,9 +25,9 @@ From stats we can see that model with Pooling gets higher stats.
 The highest Accuracy being **81.91%** at Step 7, where model got F1 Score of **81.50** and Loss Function Value **0.0546** for D1ToD1Pooling run.
 
 Experiments with Night time photos show similar results, but with lower scores
-Accuracy: **51.06%**
-F1-Score: **49.98**
-Loss Function: **0.1552**
+Accuracy: **51.06%** <br>
+F1-Score: **49.98** <br>
+Loss Function: **0.1552** <br>
 
 The experiment with night images took longer, so it got through only 5 steps (epoches) in 3 days.
 
