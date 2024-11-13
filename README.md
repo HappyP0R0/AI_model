@@ -47,3 +47,7 @@ The experiment with night images took longer, so it got through only 5 steps (ep
 ![F1ScoreGraphD1N1](https://github.com/user-attachments/assets/64cdbb21-b060-4c3d-a2ed-dbd28df9cfd0)
 
 ![LossFunctionGraphD1N1](https://github.com/user-attachments/assets/248863f9-8bf5-4f13-a495-c4886c2a96b8)
+
+### Confusion Matrix from D1ToD1Pooling 7th run
+![confusion Matrix from 7th epoch](https://github.com/user-attachments/assets/730fdc5b-e6c0-4f62-bc76-14935ba77d7f)
+
